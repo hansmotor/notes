@@ -1,6 +1,8 @@
 # Multi-Master/Multi-Robot ROS, Present and Future
 > by HoriSun   
+> 
 > 这是对 Aptima Inc 的 Jeff Rousseau 在 ROSCon2012 上演讲的简单笔记。当时他们刚开始尝试做实验性的 Multimaster，虽然做了一些 demo，但通用性和可靠性仍然难以保证。Jeff 同时是 ROS 的 Multi-Master Special Interest Group (MM-SIG) 的成员。  
+> 
 > 目前主要可见到的 multimaster 实现有由 rocon 主导开发的 rocon\_multimaster，以及由 FKIE 开发的 multimaster\_fkie。
 
 
