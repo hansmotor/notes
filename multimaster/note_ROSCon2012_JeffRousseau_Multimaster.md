@@ -6,7 +6,7 @@
 > 目前主要可见到的 multimaster 实现有由 rocon 主导开发的 rocon\_multimaster，以及由 FKIE 开发的 multimaster\_fkie。
 
 
-## 多机器人系统：通讯能力的局限
+## 1. 多机器人系统：通讯能力的局限
 
 理想的多机器人系统：网络从不断线，机器永不宕机，带宽无限，延迟无存。   
 醒醒，骚年。
@@ -19,7 +19,7 @@
   2. TCP 为一对一通讯，当场景中需要一对多通讯（一机发多机收）时，使用多播（multicast）协议如 PGM 等更合适。
     
     
-## ROS master 是什么  ~~道是什么~~
+## 2. ROS master 是什么  ~~道是什么~~
 
 - 一个 XMLRPC 服务器
 - 与 parameter server 同时启动
@@ -30,26 +30,34 @@
 
 由于这种类 DNS 机制，ROS 存在一个问题：当 roscore 被单独关闭后，连接同一 topic 的发布 node 和订阅 node （在已经建立连接的情况下）依然能正常工作，数据仍然能被发送和接收。若此时再开一个新的 roscore（也就是新的 master）, 这些节点不会被 master 所知， rosnode kill -a 也无法关闭它们。
     
-换言之，对于一个 topic, 它的 subscriber 和 publisher 是各自单独建立连接的。 master 只担任资源注册/查找的工作。**一旦 master 关闭/掉线**：
-  - 已有的 node 会被孤立，新开的 master 不知道它们存在
+换言之，对于一个 topic, 它的 subscriber 和 publisher 是各自单独建立连接的。 master 只担任资源注册/查找的工作。**_一旦 master 关闭/掉线_**：
   - ROS service 和 parameter 无法获取， topic 的 subscriber 无法找到 publisher
   - 已有的 topic / node 等列表亦无法查询
+  - 若新开 master (roscore/roslaunch)，已有的 node 会被新开的 master 孤立 
 
 
 
-## 从一到多：为何需要运行多个 master？
+## 3. 从一到多：为何需要运行多个 master？
 
 ROS 自身有在网络里多机共享单一 master 的能力，但在某些场景下我们需要允许多个 master 共存并进行通讯：
-    1. 各自拥有 master 的多台机器人相互通讯
-    2. 一台建筑内有多台移动机器人，一个或多个同样运行 ROS 的管理设备（building manager 或 fleet manager）为它们提供必要的局部信息和进行调度。机器人连接到新的管理设备以获取诸如地图和任务请求之类的信息。
+  1. 各自拥有 master 的多台机器人相互通讯
+  2. 一台建筑内有多台移动机器人，一个或多个同样运行 ROS 的管理设备（building manager 或 fleet manager）为它们提供必要的局部信息和进行调度。机器人连接到新的管理设备以获取诸如地图和任务请求等信息。
     
 为什么不用一个 master? 首先机器人需要能够独立运行，其次，即使所有机器是在同一楼层里，但无线网络连接的可靠性和覆盖范围也是一个问题。
 
+在机器人移动到新地点连接新固定设备的场景中，**固定设备上运行的 ROS master 会有不同于机器人上的配置（如新的参数/服务），而这些配置在机器人启动的时候是不存在的**。
 
-## ROS master 的缺陷
+如果是唯一 master 架构，在机器人脱离 master 的无线连接范围后，机器人上的 node **能否顺利地发现连接断开并正常终止**也是一个问题。因为在获取所用信息后，这些 node 不会再去关心 master 的死活。
 
-ROS master 是一个 XMLRPC 服务器，它行驶的功能大致相当于 DNS 服务器。当 node 给它发来一个资源（topic / service / param）的时，它将对应
-    
-    
-    
+基于这些原因，可以考虑采用多 master 方案：一个可靠的本地 master 加上对外部 master 的自动发现与连接机制。
+
+
+## Foreign Relay 
+
+Foreign Relay 是一个命令行工具，用于将运行 master 的两台机上中继消息。
+
+```
+$ rosrun foreign_relay foreign_relay.py (adv|sub) topicname foreign_master_uri
+```
+
 
