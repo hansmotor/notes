@@ -1,0 +1,53 @@
+# Multi-Master/Multi-Robot ROS, Present and Future
+> by HoriSun 
+> 这是对 Aptima Inc 的 Jeff Rousseau 在 ROSCon2012 上演讲的简单笔记。当时他们刚开始尝试做实验性的 Multimaster，虽然做了一些 demo，但通用性和可靠性仍然难以保证。Jeff 同时是 ROS 的 Multi-Master Special Interest Group (MM-SIG) 的成员。
+> 目前主要可见到的 multimaster 实现有由 rocon 主导开发的 rocon\_multimaster，以及由 FKIE 开发的 multimaster\_fkie。
+
+
+## 多机器人系统：通讯能力的局限
+
+理想的多机器人系统：网络从不断线，机器永不宕机，带宽无限，延迟无存。
+醒醒，骚年。
+  - 小车可能会没电
+  - 小车跑出WiFi覆盖范围
+  - 带宽拥挤： TF, 点云，地图， costmap， 视频数据
+
+目前 ROS （先不考虑 ROS 2.0，那还没开发完） 主要使用 TCP 通讯（ROS 的 C++ API 提供 UDP 通讯功能，但不太好用）。在某些场景下，TCP 并不是最佳选择：
+    1. TCP 主要保证可靠性，却不能保证即时性。对于音视频传输和遥控，像 UDP 这类不强调可靠性的反而更合适；
+    2. TCP 为一对一通讯，当场景中需要一对多通讯（一机发多机收）时，使用多播（multicast）协议如 PGM 等更合适。
+    
+    
+## ROS master 是什么  ~~道是什么~~
+
+- 一个 XMLRPC 服务器
+- 与 parameter server 同时启动
+- 以目录方式管理资源（topic / service / param），类似 DNS
+  - 对于一个 topic，其 advertiser 和 subscriber 会在 ROS master 处注册以供查询
+  - subscriber 往 master 发送注册请求，返回的信息找到 advertiser 并获取数据
+  - 对于 service 而言， client 从 master 获取的是 service 的 URI
+
+由于这种类 DNS 机制，ROS 存在一个问题：当 roscore 被单独关闭后，连接同一 topic 的发布 node 和订阅 node （在已经建立连接的情况下）依然能正常工作，数据仍然能被发送和接收。若此时再开一个新的 roscore（也就是新的 master）, 这些节点不会被 master 所知， rosnode kill -a 也无法关闭它们。
+    
+换言之，对于一个 topic, 它的 subscriber 和 publisher 是各自单独建立连接的。 master 只担任资源注册/查找的工作。**一旦 master 关闭/掉线**：
+  - 已有的 node 会被孤立，新开的 master 不知道它们存在
+  - ROS service 和 parameter 无法获取， topic 的 subscriber 无法找到 publisher
+  - 已有的 topic / node 等列表亦无法查询
+
+
+
+## 从一到多：为何需要运行多个 master？
+
+ROS 自身有在网络里多机共享单一 master 的能力，但在某些场景下我们需要允许多个 master 共存并进行通讯：
+    1. 各自拥有 master 的多台机器人相互通讯
+    2. 一台建筑内有多台移动机器人，一个或多个同样运行 ROS 的管理设备（building manager 或 fleet manager）为它们提供必要的局部信息和进行调度。机器人连接到新的管理设备以获取诸如地图和任务请求之类的信息。
+    
+为什么不用一个 master? 首先机器人需要能够独立运行，其次，即使所有机器是在同一楼层里，但无线网络连接的可靠性和覆盖范围也是一个问题。
+
+
+## ROS master 的缺陷
+
+ROS master 是一个 XMLRPC 服务器，它行驶的功能大致相当于 DNS 服务器。当 node 给它发来一个资源（topic / service / param）的时，它将对应
+    
+    
+    
+
