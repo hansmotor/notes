@@ -52,12 +52,29 @@ ROS 自身有在网络里多机共享单一 master 的能力，但在某些场�
 基于这些原因，可以考虑采用多 master 方案：一个可靠的本地 master 加上对外部 master 的自动发现与连接机制。
 
 
-## Foreign Relay 
+## 4. Foreign Relay 
 
 Foreign Relay 是一个命令行工具，用于将运行 master 的两台机上中继消息。
 
 ```
-$ rosrun foreign_relay foreign_relay.py (adv|sub) topicname foreign_master_uri
+$ rosrun foreign_relay foreign_relay.py (adv|sub) topic foreign_master_uri
 ```
 
+事实上 Foreign Relay 没有使用 rospy 库，而是直接通过 XML-RPC 直接与 master 通讯，因此绕过了 Python/C++ ROS API 下 node 必须绑定一个 master 的限制。
 
+foreign_relay 的限制：
+  - Node 无法知道外部 master 是否掉线（资源注册不会超时，见 TTL issue #682 (???)）
+  - 不能以可编程的方式部署
+  
+    静态 launch 文件是个问题。整个系统的状态在配置时就要决定好，不能在运行时修改
+    
+    在这种情况下， 使用网络发现协议如 zeroconf 等就变得困难
+  - 可以 hack （比如 catch exception 以判断）但显然不优雅也不合适，后续会难以维护
+  
+  
+  
+  
+  
+つづく
+  
+  
