@@ -1,5 +1,4 @@
-## AGV Specification     
-## AGV规格
+## AGV Specification   AGV规格    
 
 1.  What is the min clear aisle?    
     通道最小预留宽度是？
@@ -44,8 +43,7 @@
 
 
 
-## Floor Conditions Requirement
-## 地面条件要求
+## Floor Conditions Requirement   地面条件要求
 
 1.  What is the level difference?
     能越过多高的坎？
